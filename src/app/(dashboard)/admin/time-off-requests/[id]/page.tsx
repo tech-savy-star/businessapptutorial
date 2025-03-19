@@ -108,7 +108,7 @@ const page = async ({
               <div className="space-y-1">
                 <dt className="text-sm font-medium text-gray-500">Duration</dt>
                 <dd>
-                  {daysCount} day {daysCount !== 1 ? "s" : ""}
+                  {daysCount} day{daysCount !== 1 ? "s" : ""}
                 </dd>
               </div>
               <div className="space-y-1">
