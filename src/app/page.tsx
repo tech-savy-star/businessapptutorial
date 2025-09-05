@@ -3,19 +3,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Paperclip } from "lucide-react";
-import { SignInButton } from "@clerk/nextjs";
-import { UserButton } from "@clerk/nextjs";
-import { SignedIn } from "@clerk/nextjs";
-import { SignedOut } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
-  const { userId, sessionClaims } = await auth();
+  const session = await getServerSession(authOptions);
 
-  if (sessionClaims?.metadata?.role === "ADMIN") {
+  if (session?.user?.role === "ADMIN") {
     redirect("/admin");
-  } else if (sessionClaims?.metadata?.role === "EMPLOYEE") {
+  } else if (session?.user?.role === "EMPLOYEE") {
     redirect("/employee");
   }
 
@@ -46,13 +43,15 @@ export default async function Home() {
           </Link>
         </nav>
         <div className="flex gap-4">
-        <SignedOut>
-          <SignInButton 
-          />
-        </SignedOut>
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
+          {!session ? (
+            <Button asChild>
+              <Link href="/auth/signin">Sign In</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline">
+              <Link href="/auth/signout">Sign Out</Link>
+            </Button>
+          )}
         </div>
       </header>
       <main className="flex-1">
@@ -71,7 +70,7 @@ export default async function Home() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button asChild>
-                    <Link href="/sign-up">Get Started</Link>
+                    <Link href="/auth/signup">Get Started</Link>
                   </Button>
                   <Button variant={"outline"} asChild>
                     <Link href="/features">Learn More</Link>

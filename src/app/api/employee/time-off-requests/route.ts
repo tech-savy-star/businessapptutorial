@@ -1,26 +1,29 @@
-"use server";
-
-import { auth } from "@clerk/nextjs/server";
-import prisma from "../prisma";
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { TimeOffType } from "@prisma/client";
 
-export async function createTimeOffRequest(formData: FormData) {
+export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const dbUser = await prisma.user.findUnique({
       where: {
-        clerkId: userId,
+        id: session.user.id,
       },
     });
 
     if (!dbUser) {
-      throw new Error("User not found");
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const formData = await request.formData();
+    
     const startDate = formData.get("startDate");
     const endDate = formData.get("endDate");
     const type = formData.get("type") as string;
@@ -28,7 +31,7 @@ export async function createTimeOffRequest(formData: FormData) {
     const workingDays = parseInt(formData.get("workingDays") as string) || 0;
 
     if (!startDate || !endDate || !type) {
-      throw new Error("Missing required fields");
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const timeOffRequest = await prisma.timeOffRequest.create({
@@ -42,9 +45,12 @@ export async function createTimeOffRequest(formData: FormData) {
       },
     });
 
-    return timeOffRequest;
+    return NextResponse.json(timeOffRequest);
   } catch (error) {
     console.error("Error creating time off request:", error);
-    throw new Error("An error occurred while creating the request");
+    return NextResponse.json(
+      { error: "An error occurred while creating the request" },
+      { status: 500 }
+    );
   }
 }
